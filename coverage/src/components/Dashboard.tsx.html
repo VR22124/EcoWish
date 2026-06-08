@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
@@ -102,7 +102,19 @@
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a>
 <a name='L39'></a><a href='#L39'>39</a>
-<a name='L40'></a><a href='#L40'>40</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -115,12 +127,24 @@
 <span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -150,30 +174,42 @@ interface DashboardProps {
 }
 &nbsp;
 export const Dashboard: React.FC&lt;DashboardProps&gt; = React.memo(({ logs }) =&gt; {
-  const totalCarbonSaved = useMemo(() =&gt; {
-    return logs.reduce((acc, log) =&gt; acc + Number(log.carbon_saved_kg), 0);
-  }, [logs]);
+  const totalCarbonSaved = useMemo(
+    () =&gt; logs.reduce((acc, log) =&gt; acc + Number(log.carbon_saved_kg), 0),
+    [logs]
+  );
 &nbsp;
-  const treeEquivalent = useMemo(() =&gt; {
-    // A mature tree absorbs about 21kg of CO2 per year.
-    return (totalCarbonSaved / 21).toFixed(2);
-  }, [totalCarbonSaved]);
+  const treeEquivalent = useMemo(
+    () =&gt; (totalCarbonSaved / 21).toFixed(2),
+    [totalCarbonSaved]
+  );
 &nbsp;
   return (
     &lt;div className="grid-layout"&gt;
-      &lt;div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}&gt;
-        &lt;Leaf color="var(--primary)" size={48} style={{ marginBottom: '1rem' }} /&gt;
-        &lt;h2 style={{ fontSize: '1.2rem', fontWeight: 500 }}&gt;Total CO₂ Saved&lt;/h2&gt;
-        &lt;p className="stat-value"&gt;{totalCarbonSaved.toFixed(1)} &lt;span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}&gt;kg&lt;/span&gt;&lt;/p&gt;
-        &lt;p style={{ color: 'var(--text-muted)' }}&gt;Equivalent to planting {treeEquivalent} trees!&lt;/p&gt;
+      &lt;div className="glass-card stat-card"&gt;
+        &lt;Leaf color="var(--primary)" size={48} className="stat-icon" aria-hidden="true" /&gt;
+        &lt;h2 className="stat-heading"&gt;Total CO₂ Saved&lt;/h2&gt;
+        &lt;p
+          className="stat-value"
+          aria-label={`Total CO2 saved: ${totalCarbonSaved.toFixed(1)} kilograms`}
+        &gt;
+          {totalCarbonSaved.toFixed(1)}{' '}
+          &lt;span className="stat-unit"&gt;kg&lt;/span&gt;
+        &lt;/p&gt;
+        &lt;p className="stat-footnote"&gt;Equivalent to planting {treeEquivalent} trees!&lt;/p&gt;
       &lt;/div&gt;
 &nbsp;
-      &lt;div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}&gt;
-        &lt;Award color="var(--primary)" size={48} style={{ marginBottom: '1rem' }} /&gt;
-        &lt;h2 style={{ fontSize: '1.2rem', fontWeight: 500 }}&gt;Actions Taken&lt;/h2&gt;
-        &lt;p className="stat-value"&gt;{logs.length}&lt;/p&gt;
-        &lt;div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}&gt;
-          &lt;TrendingDown size={20} /&gt;
+      &lt;div className="glass-card stat-card"&gt;
+        &lt;Award color="var(--primary)" size={48} className="stat-icon" aria-hidden="true" /&gt;
+        &lt;h2 className="stat-heading"&gt;Actions Taken&lt;/h2&gt;
+        &lt;p
+          className="stat-value"
+          aria-label={`Total actions taken: ${logs.length}`}
+        &gt;
+          {logs.length}
+        &lt;/p&gt;
+        &lt;div className="stat-trending"&gt;
+          &lt;TrendingDown size={20} aria-hidden="true" /&gt;
           &lt;span&gt;Keep it up!&lt;/span&gt;
         &lt;/div&gt;
       &lt;/div&gt;
@@ -187,7 +223,7 @@ export const Dashboard: React.FC&lt;DashboardProps&gt; = React.memo(({ logs }) =
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-08T19:19:32.796Z
+                at 2026-06-08T19:52:20.522Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -113,8 +113,7 @@
 <a name='L48'></a><a href='#L48'>48</a>
 <a name='L49'></a><a href='#L49'>49</a>
 <a name='L50'></a><a href='#L50'>50</a>
-<a name='L51'></a><a href='#L51'>51</a>
-<a name='L52'></a><a href='#L52'>52</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L51'></a><a href='#L51'>51</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -125,7 +124,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -133,17 +132,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -152,8 +146,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -178,41 +176,40 @@ interface ActionListProps {
 export const ActionList: React.FC&lt;ActionListProps&gt; = React.memo(({ logs, onDeleteLog }) =&gt; {
   if (logs.length === 0) {
     return (
-      &lt;div className="glass-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}&gt;
-        &lt;p style={{ color: 'var(--text-muted)' }}&gt;No actions logged yet. Start reducing your footprint today!&lt;/p&gt;
+      &lt;div className="glass-card empty-state"&gt;
+        &lt;p className="empty-state-text"&gt;No actions logged yet. Start reducing your footprint today!&lt;/p&gt;
       &lt;/div&gt;
     );
   }
 &nbsp;
   return (
     &lt;div className="glass-card"&gt;
-      &lt;h3 style={{ marginBottom: '1.5rem', fontSize: '1.5rem', fontWeight: 600 }}&gt;Recent Actions&lt;/h3&gt;
-      &lt;div className="action-list"&gt;
+      &lt;h3 className="section-heading"&gt;Recent Actions&lt;/h3&gt;
+      &lt;ul className="action-list" aria-label="Logged eco-friendly actions"&gt;
         {logs.map((log) =&gt; (
-          &lt;div key={log.id} className="action-item"&gt;
+          &lt;li key={log.id} className="action-item"&gt;
             &lt;div&gt;
               &lt;div className="action-item-title"&gt;{log.action_title}&lt;/div&gt;
               &lt;div className="action-item-meta"&gt;
-                &lt;span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}&gt;
-                  &lt;Calendar size={14} /&gt;
+                &lt;span className="action-item-meta-date"&gt;
+                  &lt;Calendar size={14} aria-hidden="true" /&gt;
                   {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
                 &lt;/span&gt;
-                &lt;span style={{ color: 'var(--primary)', fontWeight: 500 }}&gt;
+                &lt;span className="action-item-co2"&gt;
                   -{log.carbon_saved_kg} kg CO₂
                 &lt;/span&gt;
               &lt;/div&gt;
             &lt;/div&gt;
-            &lt;button 
+            &lt;button
               onClick={() =&gt; onDeleteLog(log.id)}
-              className="btn btn-danger"
-              style={{ padding: '0.5rem', borderRadius: '50%' }}
+              className="btn btn-danger btn-icon"
               aria-label={`Delete log for ${log.action_title}`}
             &gt;
-              &lt;Trash2 size={18} /&gt;
+              &lt;Trash2 size={18} aria-hidden="true" /&gt;
             &lt;/button&gt;
-          &lt;/div&gt;
+          &lt;/li&gt;
         ))}
-      &lt;/div&gt;
+      &lt;/ul&gt;
     &lt;/div&gt;
   );
 });
@@ -223,7 +220,7 @@ export const ActionList: React.FC&lt;ActionListProps&gt; = React.memo(({ logs, o
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-08T19:19:32.796Z
+                at 2026-06-08T19:52:20.522Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

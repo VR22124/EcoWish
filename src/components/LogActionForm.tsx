@@ -14,6 +14,9 @@ export const LogActionForm: React.FC<LogActionFormProps> = React.memo(({ onAddLo
     e.preventDefault();
     if (!selectedActionId) return;
 
+    const action = ECO_ACTIONS.find(a => a.id === selectedActionId);
+    if (!action || action.carbon_saved_kg <= 0) return;
+
     setIsSubmitting(true);
     try {
       await onAddLog(selectedActionId);
@@ -27,11 +30,13 @@ export const LogActionForm: React.FC<LogActionFormProps> = React.memo(({ onAddLo
 
   return (
     <div className="glass-card">
-      <h3 style={{ marginBottom: '1rem', fontSize: '1.5rem', fontWeight: 600 }}>Log a New Action</h3>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <h3 className="form-card-heading">Log a New Action</h3>
+      <form onSubmit={handleSubmit} className="form-stack">
         <div>
-          <label htmlFor="action-select" className="input-label">Select Eco-friendly Action</label>
-          <select 
+          <label htmlFor="action-select" className="input-label">
+            Select Eco-friendly Action
+          </label>
+          <select
             id="action-select"
             value={selectedActionId}
             onChange={(e) => setSelectedActionId(e.target.value)}
@@ -46,13 +51,13 @@ export const LogActionForm: React.FC<LogActionFormProps> = React.memo(({ onAddLo
             ))}
           </select>
         </div>
-        <button 
-          type="submit" 
-          className="btn" 
+        <button
+          type="submit"
+          className="btn"
           disabled={!selectedActionId || isSubmitting}
           aria-busy={isSubmitting}
         >
-          <PlusCircle size={20} />
+          <PlusCircle size={20} aria-hidden="true" />
           {isSubmitting ? 'Logging...' : 'Log Action'}
         </button>
       </form>

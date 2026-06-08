@@ -4,23 +4,27 @@ import type { ActionLog } from '../types';
 import { ECO_ACTIONS } from '../constants/actions';
 import { getAnonymousUserId } from '../utils/auth';
 
+const SELECTED_COLUMNS = 'id, action_title, carbon_saved_kg, category, created_at';
+
 export const useActionLogs = () => {
   const [logs, setLogs] = useState<ActionLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLogs = useCallback(async () => {
+  const fetchLogs = useCallback(async (signal?: AbortSignal) => {
     try {
       setIsLoading(true);
       const { data, error: dbError } = await supabase
         .from('action_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select(SELECTED_COLUMNS)
+        .order('created_at', { ascending: false })
+        .abortSignal(signal ?? new AbortController().signal);
 
       if (dbError) throw dbError;
       setLogs(data || []);
       setError(null);
     } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -32,10 +36,14 @@ export const useActionLogs = () => {
   }, []);
 
   useEffect(() => {
-    fetchLogs();
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchLogs(controller.signal);
+    return () => controller.abort();
   }, [fetchLogs]);
 
-  const addLog = async (actionId: string) => {
+
+  const addLog = useCallback(async (actionId: string) => {
     const actionDef = ECO_ACTIONS.find(a => a.id === actionId);
     if (!actionDef) return;
 
@@ -49,12 +57,11 @@ export const useActionLogs = () => {
           carbon_saved_kg: actionDef.carbon_saved_kg,
           user_id: getAnonymousUserId()
         }])
-        .select()
+        .select(SELECTED_COLUMNS)
         .single();
 
       if (dbError) throw dbError;
-      
-      // Update local state directly instead of re-fetching (Efficiency)
+
       if (data) {
         setLogs(prev => [data, ...prev]);
       }
@@ -66,9 +73,9 @@ export const useActionLogs = () => {
       }
       throw err;
     }
-  };
+  }, []);
 
-  const deleteLog = async (id: string) => {
+  const deleteLog = useCallback(async (id: string) => {
     try {
       setError(null);
       const { error: dbError } = await supabase
@@ -77,7 +84,7 @@ export const useActionLogs = () => {
         .eq('id', id);
 
       if (dbError) throw dbError;
-      
+
       setLogs(prevLogs => prevLogs.filter(log => log.id !== id));
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -87,7 +94,7 @@ export const useActionLogs = () => {
       }
       throw err;
     }
-  };
+  }, []);
 
   return { logs, isLoading, error, setError, addLog, deleteLog };
 };

@@ -9,51 +9,65 @@ vi.mock('../supabaseClient', () => ({
   },
 }));
 
+/** Typed helper to avoid `as any` casts throughout tests */
+const mockFrom = () => (supabase.from as ReturnType<typeof vi.fn>);
+
+/**
+ * Builds the full fetch mock chain:
+ * from() -> select() -> order() -> abortSignal() -> resolvedValue
+ */
+const makeFetchMock = (resolvedValue: { data: unknown; error: unknown }) => {
+  const mockAbortSignal = vi.fn().mockResolvedValue(resolvedValue);
+  const mockOrder = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+  const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+  return { mockSelect, mockOrder, mockAbortSignal };
+};
+
+/** Resolves all pending microtasks */
+const flushPromises = () => act(async () => {
+  await new Promise(resolve => setTimeout(resolve, 0));
+});
+
 describe('useActionLogs', () => {
-  const mockAction = { id: '1', action_title: 'Test Action', carbon_saved_kg: 1, category: 'Test', created_at: '2026-06-08T10:00:00Z' };
+  const mockAction = {
+    id: '1',
+    action_title: 'Test Action',
+    carbon_saved_kg: 1,
+    category: 'Test',
+    created_at: '2026-06-08T10:00:00Z',
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('initializes and fetches logs', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [mockAction], error: null });
-    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
-    (supabase.from as any).mockReturnValue({ select: mockSelect });
+    const { mockSelect } = makeFetchMock({ data: [mockAction], error: null });
+    mockFrom().mockReturnValue({ select: mockSelect });
 
     const { result } = renderHook(() => useActionLogs());
-
     expect(result.current.isLoading).toBe(true);
-    
-    // Wait for the async fetch to complete
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+
+    await flushPromises();
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.logs).toEqual([mockAction]);
   });
 
   it('handles add log', async () => {
-    // Setup initial fetch
-    const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    
-    // Setup insert
+    const { mockSelect: mockSelectFetch } = makeFetchMock({ data: [], error: null });
+
     const mockSingle = vi.fn().mockResolvedValue({ data: mockAction, error: null });
     const mockSelectInsert = vi.fn().mockReturnValue({ single: mockSingle });
     const mockInsert = vi.fn().mockReturnValue({ select: mockSelectInsert });
-    
-    (supabase.from as any).mockImplementation(() => ({
+
+    mockFrom().mockImplementation(() => ({
       select: mockSelectFetch,
-      insert: mockInsert
+      insert: mockInsert,
     }));
 
     const { result } = renderHook(() => useActionLogs());
-    
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
     await act(async () => {
       await result.current.addLog('1');
@@ -64,22 +78,18 @@ describe('useActionLogs', () => {
   });
 
   it('handles delete log', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [mockAction], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    
+    const { mockSelect: mockSelectFetch } = makeFetchMock({ data: [mockAction], error: null });
+
     const mockEq = vi.fn().mockResolvedValue({ error: null });
     const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
 
-    (supabase.from as any).mockImplementation(() => ({
+    mockFrom().mockImplementation(() => ({
       select: mockSelectFetch,
-      delete: mockDelete
+      delete: mockDelete,
     }));
 
     const { result } = renderHook(() => useActionLogs());
-
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
     expect(result.current.logs).toHaveLength(1);
 
@@ -91,194 +101,166 @@ describe('useActionLogs', () => {
     expect(result.current.logs).toEqual([]);
   });
 
-  it('handles fetch error', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: null, error: new Error('Network error') });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    (supabase.from as any).mockReturnValue({ select: mockSelectFetch });
+  it('handles fetch error (Error instance)', async () => {
+    const { mockSelect } = makeFetchMock({ data: null, error: new Error('Network error') });
+    mockFrom().mockReturnValue({ select: mockSelect });
 
     const { result } = renderHook(() => useActionLogs());
-
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
     expect(result.current.error).toBe('Network error');
   });
 
-  it('handles addLog error', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    
+  it('handles unknown fetch error (non-Error)', async () => {
+    const mockAbortSignal = vi.fn().mockRejectedValue('String error');
+    const mockOrder = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+    mockFrom().mockReturnValue({ select: mockSelect });
+
+    const { result } = renderHook(() => useActionLogs());
+    await flushPromises();
+
+    expect(result.current.error).toBe('Failed to fetch logs');
+  });
+
+  it('handles fetch with null data (defaults to empty array)', async () => {
+    const { mockSelect } = makeFetchMock({ data: null, error: null });
+    mockFrom().mockReturnValue({ select: mockSelect });
+
+    const { result } = renderHook(() => useActionLogs());
+    await flushPromises();
+
+    expect(result.current.logs).toEqual([]);
+  });
+
+  it('handles addLog error (Error instance)', async () => {
+    const { mockSelect: mockSelectFetch } = makeFetchMock({ data: [], error: null });
+
     const mockSingle = vi.fn().mockResolvedValue({ data: null, error: new Error('Insert failed') });
     const mockSelectInsert = vi.fn().mockReturnValue({ single: mockSingle });
     const mockInsert = vi.fn().mockReturnValue({ select: mockSelectInsert });
-    
-    (supabase.from as any).mockImplementation(() => ({
+
+    mockFrom().mockImplementation(() => ({
       select: mockSelectFetch,
-      insert: mockInsert
+      insert: mockInsert,
     }));
 
     const { result } = renderHook(() => useActionLogs());
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
     await act(async () => {
-      try {
-        await result.current.addLog('1');
-      } catch (e) {}
+      try { await result.current.addLog('1'); } catch { /* expected */ }
     });
 
     expect(result.current.error).toBe('Insert failed');
   });
 
-  it('handles deleteLog error', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [mockAction], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    
-    const mockEq = vi.fn().mockResolvedValue({ error: new Error('Delete failed') });
-    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
+  it('handles unknown addLog error (non-Error)', async () => {
+    const { mockSelect: mockSelectFetch } = makeFetchMock({ data: [], error: null });
 
-    (supabase.from as any).mockImplementation(() => ({
+    const mockInsert = vi.fn().mockImplementation(() => { throw 'String insert error'; });
+
+    mockFrom().mockImplementation(() => ({
       select: mockSelectFetch,
-      delete: mockDelete
+      insert: mockInsert,
     }));
 
     const { result } = renderHook(() => useActionLogs());
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
     await act(async () => {
-      try {
-        await result.current.deleteLog('1');
-      } catch (e) {}
-    });
-
-    expect(result.current.error).toBe('Delete failed');
-  });
-
-  it('handles unknown fetch error', async () => {
-    const mockOrder = vi.fn().mockRejectedValue('String error');
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    (supabase.from as any).mockReturnValue({ select: mockSelectFetch });
-
-    const { result } = renderHook(() => useActionLogs());
-
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
-
-    expect(result.current.error).toBe('Failed to fetch logs');
-  });
-
-  it('handles unknown addLog error', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    
-    const mockInsert = vi.fn().mockImplementation(() => {
-      throw 'String insert error';
-    });
-    
-    (supabase.from as any).mockImplementation(() => ({
-      select: mockSelectFetch,
-      insert: mockInsert
-    }));
-
-    const { result } = renderHook(() => useActionLogs());
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
-
-    await act(async () => {
-      try {
-        await result.current.addLog('1');
-      } catch (e) {}
+      try { await result.current.addLog('1'); } catch { /* expected */ }
     });
 
     expect(result.current.error).toBe('Error saving action');
   });
 
-  it('handles unknown deleteLog error', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [mockAction], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    
-    const mockDelete = vi.fn().mockImplementation(() => {
-      throw 'String delete error';
-    });
+  it('handles deleteLog error (Error instance)', async () => {
+    const { mockSelect: mockSelectFetch } = makeFetchMock({ data: [mockAction], error: null });
 
-    (supabase.from as any).mockImplementation(() => ({
+    const mockEq = vi.fn().mockResolvedValue({ error: new Error('Delete failed') });
+    const mockDelete = vi.fn().mockReturnValue({ eq: mockEq });
+
+    mockFrom().mockImplementation(() => ({
       select: mockSelectFetch,
-      delete: mockDelete
+      delete: mockDelete,
     }));
 
     const { result } = renderHook(() => useActionLogs());
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
     await act(async () => {
-      try {
-        await result.current.deleteLog('1');
-      } catch (e) {}
+      try { await result.current.deleteLog('1'); } catch { /* expected */ }
+    });
+
+    expect(result.current.error).toBe('Delete failed');
+  });
+
+  it('handles unknown deleteLog error (non-Error)', async () => {
+    const { mockSelect: mockSelectFetch } = makeFetchMock({ data: [mockAction], error: null });
+
+    const mockDelete = vi.fn().mockImplementation(() => { throw 'String delete error'; });
+
+    mockFrom().mockImplementation(() => ({
+      select: mockSelectFetch,
+      delete: mockDelete,
+    }));
+
+    const { result } = renderHook(() => useActionLogs());
+    await flushPromises();
+
+    await act(async () => {
+      try { await result.current.deleteLog('1'); } catch { /* expected */ }
     });
 
     expect(result.current.error).toBe('Error deleting action');
   });
 
-  it('handles fetch logs with null data', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: null, error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    (supabase.from as any).mockReturnValue({ select: mockSelectFetch });
-
-    const { result } = renderHook(() => useActionLogs());
-
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
-
-    expect(result.current.logs).toEqual([]);
-  });
-
   it('bails out when adding invalid action id', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    (supabase.from as any).mockReturnValue({ select: mockSelectFetch });
+    const { mockSelect } = makeFetchMock({ data: [], error: null });
+    mockFrom().mockReturnValue({ select: mockSelect });
 
     const { result } = renderHook(() => useActionLogs());
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
-    await act(async () => {
-      await result.current.addLog('invalid-id');
-    });
+    await act(async () => { await result.current.addLog('invalid-id'); });
 
     expect(result.current.logs).toEqual([]);
   });
 
-  it('handles addLog with null data returned', async () => {
-    const mockOrder = vi.fn().mockResolvedValue({ data: [], error: null });
-    const mockSelectFetch = vi.fn().mockReturnValue({ order: mockOrder });
-    
+  it('handles addLog with null data returned (no state update)', async () => {
+    const { mockSelect: mockSelectFetch } = makeFetchMock({ data: [], error: null });
+
     const mockSingle = vi.fn().mockResolvedValue({ data: null, error: null });
     const mockSelectInsert = vi.fn().mockReturnValue({ single: mockSingle });
     const mockInsert = vi.fn().mockReturnValue({ select: mockSelectInsert });
-    
-    (supabase.from as any).mockImplementation(() => ({
+
+    mockFrom().mockImplementation(() => ({
       select: mockSelectFetch,
-      insert: mockInsert
+      insert: mockInsert,
     }));
 
     const { result } = renderHook(() => useActionLogs());
-    await act(async () => {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    });
+    await flushPromises();
 
-    await act(async () => {
-      await result.current.addLog('1');
-    });
+    await act(async () => { await result.current.addLog('1'); });
 
     expect(result.current.logs).toEqual([]);
+  });
+
+  it('ignores AbortError on fetch (component unmounted mid-request)', async () => {
+    const abortError = new DOMException('Aborted', 'AbortError');
+    const mockAbortSignal = vi.fn().mockRejectedValue(abortError);
+    const mockOrder = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+    mockFrom().mockReturnValue({ select: mockSelect });
+
+    const { result, unmount } = renderHook(() => useActionLogs());
+    unmount();
+
+    await flushPromises();
+
+    // No error should be set — AbortError is silently ignored
+    expect(result.current.error).toBeNull();
   });
 });
