@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import type { ActionLog } from '../types';
 import { ECO_ACTIONS } from '../constants/actions';
+import { getAnonymousUserId } from '../utils/auth';
 
 export const useActionLogs = () => {
   const [logs, setLogs] = useState<ActionLog[]>([]);
@@ -45,7 +46,8 @@ export const useActionLogs = () => {
         .insert([{
           action_title: actionDef.title,
           category: actionDef.category,
-          carbon_saved_kg: actionDef.carbon_saved_kg
+          carbon_saved_kg: actionDef.carbon_saved_kg,
+          user_id: getAnonymousUserId()
         }])
         .select()
         .single();
