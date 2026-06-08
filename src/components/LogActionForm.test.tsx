@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { LogActionForm } from './LogActionForm';
 
@@ -19,12 +19,14 @@ describe('LogActionForm', () => {
     const button = screen.getByRole('button', { name: /Log Action/i });
     expect(button).toBeEnabled();
     
-    fireEvent.click(button);
+    await act(async () => {
+      fireEvent.click(button);
+    });
+    
     expect(mockOnAddLog).toHaveBeenCalledWith('1');
   });
 
   it('handles submission error gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const mockOnAddLog = vi.fn().mockRejectedValue(new Error('Submit failed'));
     render(<LogActionForm onAddLog={mockOnAddLog} />);
     
@@ -32,13 +34,13 @@ describe('LogActionForm', () => {
     fireEvent.change(select, { target: { value: '1' } });
     
     const button = screen.getByRole('button', { name: /Log Action/i });
-    fireEvent.click(button);
     
-    // Wait for promise to settle
-    await Promise.resolve();
+    await act(async () => {
+      fireEvent.click(button);
+    });
     
-    expect(consoleSpy).toHaveBeenCalledWith('Error adding log:', expect.any(Error));
-    consoleSpy.mockRestore();
+    expect(mockOnAddLog).toHaveBeenCalledWith('1');
+    expect(button).toBeEnabled(); // Should re-enable after finally block
   });
 
   it('bails out if no action is selected', () => {

@@ -21,8 +21,8 @@ export const LogActionForm: React.FC<LogActionFormProps> = React.memo(({ onAddLo
     try {
       await onAddLog(selectedActionId);
       setSelectedActionId('');
-    } catch (error) {
-      console.error('Error adding log:', error);
+    } catch {
+      // Error is caught and set in the parent hook state
     } finally {
       setIsSubmitting(false);
     }

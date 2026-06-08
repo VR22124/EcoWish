@@ -18,7 +18,7 @@ export const useActionLogs = () => {
         .from('action_logs')
         .select(SELECTED_COLUMNS)
         .order('created_at', { ascending: false })
-        .abortSignal(signal ?? new AbortController().signal);
+        .abortSignal(signal as AbortSignal);
 
       if (dbError) throw dbError;
       setLogs(data || []);
@@ -26,9 +26,9 @@ export const useActionLogs = () => {
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return;
       if (err instanceof Error) {
-        setError(err.message);
+        setError('Failed to load your action logs. Please try again.');
       } else {
-        setError('Failed to fetch logs');
+        setError('Failed to load your action logs. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -67,9 +67,9 @@ export const useActionLogs = () => {
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError('Failed to save your action. Please try again.');
       } else {
-        setError('Error saving action');
+        setError('Failed to save your action. Please try again.');
       }
       throw err;
     }
@@ -88,9 +88,9 @@ export const useActionLogs = () => {
       setLogs(prevLogs => prevLogs.filter(log => log.id !== id));
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setError('Failed to delete action. Please try again.');
       } else {
-        setError('Error deleting action');
+        setError('Failed to delete action. Please try again.');
       }
       throw err;
     }

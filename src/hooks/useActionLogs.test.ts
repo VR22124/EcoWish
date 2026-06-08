@@ -108,7 +108,7 @@ describe('useActionLogs', () => {
     const { result } = renderHook(() => useActionLogs());
     await flushPromises();
 
-    expect(result.current.error).toBe('Network error');
+    expect(result.current.error).toBe('Failed to load your action logs. Please try again.');
   });
 
   it('handles unknown fetch error (non-Error)', async () => {
@@ -120,7 +120,7 @@ describe('useActionLogs', () => {
     const { result } = renderHook(() => useActionLogs());
     await flushPromises();
 
-    expect(result.current.error).toBe('Failed to fetch logs');
+    expect(result.current.error).toBe('Failed to load your action logs. Please try again.');
   });
 
   it('handles fetch with null data (defaults to empty array)', async () => {
@@ -152,7 +152,7 @@ describe('useActionLogs', () => {
       try { await result.current.addLog('1'); } catch { /* expected */ }
     });
 
-    expect(result.current.error).toBe('Insert failed');
+    expect(result.current.error).toBe('Failed to save your action. Please try again.');
   });
 
   it('handles unknown addLog error (non-Error)', async () => {
@@ -172,7 +172,7 @@ describe('useActionLogs', () => {
       try { await result.current.addLog('1'); } catch { /* expected */ }
     });
 
-    expect(result.current.error).toBe('Error saving action');
+    expect(result.current.error).toBe('Failed to save your action. Please try again.');
   });
 
   it('handles deleteLog error (Error instance)', async () => {
@@ -193,7 +193,7 @@ describe('useActionLogs', () => {
       try { await result.current.deleteLog('1'); } catch { /* expected */ }
     });
 
-    expect(result.current.error).toBe('Delete failed');
+    expect(result.current.error).toBe('Failed to delete action. Please try again.');
   });
 
   it('handles unknown deleteLog error (non-Error)', async () => {
@@ -213,7 +213,7 @@ describe('useActionLogs', () => {
       try { await result.current.deleteLog('1'); } catch { /* expected */ }
     });
 
-    expect(result.current.error).toBe('Error deleting action');
+    expect(result.current.error).toBe('Failed to delete action. Please try again.');
   });
 
   it('bails out when adding invalid action id', async () => {
