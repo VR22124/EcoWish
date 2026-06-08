@@ -18,9 +18,10 @@ const mockFrom = () => (supabase.from as ReturnType<typeof vi.fn>);
  */
 const makeFetchMock = (resolvedValue: { data: unknown; error: unknown }) => {
   const mockAbortSignal = vi.fn().mockResolvedValue(resolvedValue);
-  const mockOrder = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+  const mockLimit = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+  const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
   const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
-  return { mockSelect, mockOrder, mockAbortSignal };
+  return { mockSelect, mockOrder, mockLimit, mockAbortSignal };
 };
 
 /** Resolves all pending microtasks */
@@ -113,7 +114,8 @@ describe('useActionLogs', () => {
 
   it('handles unknown fetch error (non-Error)', async () => {
     const mockAbortSignal = vi.fn().mockRejectedValue('String error');
-    const mockOrder = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+    const mockLimit = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+    const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
     const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
     mockFrom().mockReturnValue({ select: mockSelect });
 
@@ -149,7 +151,7 @@ describe('useActionLogs', () => {
     await flushPromises();
 
     await act(async () => {
-      try { await result.current.addLog('1'); } catch { /* expected */ }
+      await result.current.addLog('1');
     });
 
     expect(result.current.error).toBe('Failed to save your action. Please try again.');
@@ -169,7 +171,7 @@ describe('useActionLogs', () => {
     await flushPromises();
 
     await act(async () => {
-      try { await result.current.addLog('1'); } catch { /* expected */ }
+      await result.current.addLog('1');
     });
 
     expect(result.current.error).toBe('Failed to save your action. Please try again.');
@@ -190,7 +192,7 @@ describe('useActionLogs', () => {
     await flushPromises();
 
     await act(async () => {
-      try { await result.current.deleteLog('1'); } catch { /* expected */ }
+      await result.current.deleteLog('1');
     });
 
     expect(result.current.error).toBe('Failed to delete action. Please try again.');
@@ -210,7 +212,7 @@ describe('useActionLogs', () => {
     await flushPromises();
 
     await act(async () => {
-      try { await result.current.deleteLog('1'); } catch { /* expected */ }
+      await result.current.deleteLog('1');
     });
 
     expect(result.current.error).toBe('Failed to delete action. Please try again.');
@@ -251,7 +253,8 @@ describe('useActionLogs', () => {
   it('ignores AbortError on fetch (component unmounted mid-request)', async () => {
     const abortError = new DOMException('Aborted', 'AbortError');
     const mockAbortSignal = vi.fn().mockRejectedValue(abortError);
-    const mockOrder = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+    const mockLimit = vi.fn().mockReturnValue({ abortSignal: mockAbortSignal });
+    const mockOrder = vi.fn().mockReturnValue({ limit: mockLimit });
     const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
     mockFrom().mockReturnValue({ select: mockSelect });
 

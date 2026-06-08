@@ -9,19 +9,11 @@ function App() {
   const { logs, isLoading, error, addLog, deleteLog, setError } = useActionLogs();
 
   const handleAddLog = useCallback(async (actionId: string) => {
-    try {
-      await addLog(actionId);
-    } catch {
-      // Error is already set in hook state
-    }
+    await addLog(actionId);
   }, [addLog]);
 
   const handleDeleteLog = useCallback(async (id: string) => {
-    try {
-      await deleteLog(id);
-    } catch {
-      // Error is already set in hook state
-    }
+    await deleteLog(id);
   }, [deleteLog]);
 
   return (
